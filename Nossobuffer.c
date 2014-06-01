@@ -8,13 +8,14 @@ int main(){
 	
 	FILE *arq, *arq2; //Ponteiros para arquivos
 	int valor_reg, tam_registro, pos_inicial_regis;
+
 	pos_inicial_regis = valor_reg = tam_registro = 0;
 	
 	tp_buffer *bufferpoll = (tp_buffer*)malloc(sizeof(tp_buffer)*PAGES);
 	
 	initbuffer(bufferpoll);
 	
-	arq = fopen("file/meta.dat", "r");
+	arq = fopen("meta.dat", "r");
 	if(arq == NULL){	
 		printf("Read Error\n");
 		return 0;
@@ -24,7 +25,7 @@ int main(){
 	tam_registro = load_metadata(arq, s, valor_reg);
 	fclose(arq);
 	
-	arq2 = fopen("file/data.dat", "r");
+	arq2 = fopen("data.dat", "r");
 	if(arq2 == NULL){
 		printf("Read Error\n");
 		return 0;

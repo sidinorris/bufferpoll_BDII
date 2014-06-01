@@ -4,7 +4,17 @@
 
 #define SIZE 512
 #define PAGES 1024
-#define TAM 20
+#define TAM 40
+
+#define ERRO_ABRIR_ARQUIVO -1
+#define ERRO_NOME_TABELA -2
+
+struct fs_objects {
+	char nome[20];
+	int cod;
+	char nArquivo[20];
+	int qtdCampos;
+};
 
 typedef struct table_bd{
 	char nome[TAM];
@@ -31,6 +41,10 @@ union c_int{
 	char cnum[sizeof(int)];
 };
 
+struct fs_objects leObjeto(char * nTabela);
+tp_table *leSchema (struct fs_objects objeto);
+char *strcop(char *data, int pos, int tam);
+
 void cpystr(char *, char *, int, int);
 void initbuffer(tp_buffer *);
 void cria_campo(int, int, char *);
@@ -39,3 +53,5 @@ int cabecalho(tp_table *, int);
 int printbufferpoll(tp_buffer *, tp_table *, int, int);
 int load_metadata(FILE *, tp_table *, int);
 void load_data(FILE *, tp_buffer *, int);
+
+int page_avalible;

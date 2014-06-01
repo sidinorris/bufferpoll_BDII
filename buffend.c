@@ -1,7 +1,65 @@
 #include "buffend.h"
 
-void cpystr(char *tg, char *sc, int st, int len) //SC = Ponteiro para string que carregada do arquivo; tg = Ponteiro para uma página do buffer
-{
+
+struct fs_objects leObjeto(char * nTabela){
+	FILE *dicionario;
+	char *tupla = (char *)malloc(sizeof(char)*20);
+	int cod;
+	dicionario = fopen("fs_objects.dat", "r");
+
+	struct fs_objects objeto ;
+
+	if (dicionario == NULL)
+		return objeto;
+
+	
+	while(fgetc (dicionario) != EOF){
+        fseek(dicionario, -1, 1);
+
+        fread(tupla, sizeof(char), 20, dicionario); //Lê somente o nome da tabela
+
+        if(strcmp(tupla, nTabela)==0){
+      		strcpy(objeto.nome, tupla);
+      		fread(&cod,sizeof(int),1,dicionario);
+      		objeto.cod=cod;
+      		fread(&cod,sizeof(int),1,dicionario);
+      		objeto.qtdCampos = cod;
+      		fread(tupla,sizeof(char),20,dicionario);
+      		strcpy(objeto.nArquivo, tupla);
+
+        	return objeto;
+        }
+	}
+	return objeto;
+}
+tp_table *leSchema (struct fs_objects objeto){
+	FILE *schema;
+	int i = 0, cod;
+	char *tupla = (char *)malloc(sizeof(char)*40);  
+	tp_table *esquema = (tp_table *)malloc(sizeof(tp_table)*objeto.qtdCampos);
+
+	schema = fopen("fs_schema.dat", "r");
+
+	if (schema == NULL)
+		return esquema;
+
+	while((fgetc (schema) != EOF) && (i < objeto.qtdCampos)){
+        fseek(schema, -1, 1);
+
+        if(fread(&cod, sizeof(int), 1, schema)){
+        	if(cod == objeto.cod){
+        		i++;
+        		fread(tupla, sizeof(char), 40, schema);
+        		strcpy(esquema[i].nome,tupla);
+        		fread(&esquema[i].tipo, sizeof(char),1,schema);      
+        		fread(&esquema[i].tam, sizeof(int),1,schema);
+        	}
+        }
+    }
+    return esquema;
+}
+
+void cpystr(char *tg, char *sc, int st, int len){ //SC = Ponteiro para string que carregada do arquivo; tg = Ponteiro para uma página do buffer
 	st = st * len;
 	
 	int i=st,j=0;
