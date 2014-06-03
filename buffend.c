@@ -2,7 +2,6 @@
 
 
 struct fs_objects leObjeto(char * nTabela){
-	printf("chego0\n");
 	
 	FILE *dicionario;
 	char *tupla = (char *)malloc(sizeof(char)*20);
@@ -14,7 +13,6 @@ struct fs_objects leObjeto(char * nTabela){
 	if (dicionario == NULL)
 		return objeto;
 
-	printf("chego1\n");
 	while(fgetc (dicionario) != EOF){
         fseek(dicionario, -1, 1);
 
@@ -22,17 +20,13 @@ struct fs_objects leObjeto(char * nTabela){
 
         if(strcmp(tupla, nTabela) == 0){
       		strcpy(objeto.nome, tupla);
-      		printf("nome = %s\n", objeto.nome);
       		fread(&cod,sizeof(int),1,dicionario);
       		objeto.cod=cod;
-      		printf("cod = %d\n", objeto.cod);
       		fread(tupla,sizeof(char),20,dicionario);
       		strcpy(objeto.nArquivo, tupla);
-      		printf("nArquivo= %s\n", objeto.nArquivo);
       		fread(&cod,sizeof(int),1,dicionario);
       		objeto.qtdCampos = cod;
-      		printf("qtdCampos = %d\n", objeto.qtdCampos);
-
+      		
         	return objeto;
         }
         fseek(dicionario, 28, 1);
@@ -55,15 +49,12 @@ tp_table *leSchema (struct fs_objects objeto){
 
         if(fread(&cod, sizeof(int), 1, schema)){
         	if(cod == objeto.cod){
-        		i++;
+        		
         		fread(tupla, sizeof(char), 40, schema);
         		strcpy(esquema[i].nome,tupla);
-        		printf("nome campo[%d]= %s\n", i,esquema[i].nome );
         		fread(&esquema[i].tipo, sizeof(char),1,schema);      
-        		printf("tipo campo[%d]= %c\n", i,esquema[i].tipo );
-        		fread(&esquema[i].tam, sizeof(int),1,schema);
-        		printf("tamanho campo[%d]= %d\n", i,esquema[i].tam );
-        		
+        		fread(&esquema[i].tam, sizeof(int),1,schema);   
+        		i++;    		
         	}
         	else
         		fseek(schema, 45, 1);
@@ -238,6 +229,17 @@ int load_metadata(FILE *arq_meta, tp_table *s, int valor_reg){
 	return tam_registro;
 }
 
+int tamTupla(tp_table *campos, struct fs_objects meta){// Retorna o tamanho total da tupla da tabela.
+
+    int qtdCampos = meta.qtdCampos, i, tamanhoGeral = 0;
+   
+    if(qtdCampos){ // Lê o primeiro inteiro que representa a quantidade de campos da tabela.
+		for(i = 0; i < qtdCampos; i++)
+			tamanhoGeral += campos[i].tam; // Soma os tamanhos de cada campo da tabela.
+	}
+
+	return tamanhoGeral;
+}
 void load_data(FILE *arq_data, tp_buffer *bufferpool, int tam_registro){
 	
 	char *lei_aux;

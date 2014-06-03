@@ -44,6 +44,7 @@ union c_int{
 struct fs_objects leObjeto(char * nTabela);
 tp_table *leSchema (struct fs_objects objeto);
 char *strcop(char *data, int pos, int tam);
+int tamTupla(tp_table *campos, struct fs_objects meta);
 
 void cpystr(char *, char *, int, int);
 void initbuffer(tp_buffer *);
