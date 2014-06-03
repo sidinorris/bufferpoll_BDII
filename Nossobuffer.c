@@ -3,9 +3,13 @@
 
 
 int main(){
+
+	struct fs_objects s;
+	s = leObjeto("Cidade");
+	leSchema(s);
 	
 	//union
-	
+	/*
 	FILE *arq, *arq2; //Ponteiros para arquivos
 	int valor_reg, tam_registro, pos_inicial_regis;
 
@@ -43,5 +47,6 @@ int main(){
 	printf("\n");
 	free(s);
 	free(bufferpoll);
+	*/
 	return 0;
 }

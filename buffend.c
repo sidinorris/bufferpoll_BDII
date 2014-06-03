@@ -2,33 +2,40 @@
 
 
 struct fs_objects leObjeto(char * nTabela){
+	printf("chego0\n");
+	
 	FILE *dicionario;
 	char *tupla = (char *)malloc(sizeof(char)*20);
 	int cod;
-	dicionario = fopen("fs_objects.dat", "r");
+	dicionario = fopen("fs_object.dat", "r");
 
 	struct fs_objects objeto ;
 
 	if (dicionario == NULL)
 		return objeto;
 
-	
+	printf("chego1\n");
 	while(fgetc (dicionario) != EOF){
         fseek(dicionario, -1, 1);
 
         fread(tupla, sizeof(char), 20, dicionario); //Lê somente o nome da tabela
 
-        if(strcmp(tupla, nTabela)==0){
+        if(strcmp(tupla, nTabela) == 0){
       		strcpy(objeto.nome, tupla);
+      		printf("nome = %s\n", objeto.nome);
       		fread(&cod,sizeof(int),1,dicionario);
       		objeto.cod=cod;
-      		fread(&cod,sizeof(int),1,dicionario);
-      		objeto.qtdCampos = cod;
+      		printf("cod = %d\n", objeto.cod);
       		fread(tupla,sizeof(char),20,dicionario);
       		strcpy(objeto.nArquivo, tupla);
+      		printf("nArquivo= %s\n", objeto.nArquivo);
+      		fread(&cod,sizeof(int),1,dicionario);
+      		objeto.qtdCampos = cod;
+      		printf("qtdCampos = %d\n", objeto.qtdCampos);
 
         	return objeto;
         }
+        fseek(dicionario, 28, 1);
 	}
 	return objeto;
 }
@@ -51,21 +58,26 @@ tp_table *leSchema (struct fs_objects objeto){
         		i++;
         		fread(tupla, sizeof(char), 40, schema);
         		strcpy(esquema[i].nome,tupla);
+        		printf("nome campo[%d]= %s\n", i,esquema[i].nome );
         		fread(&esquema[i].tipo, sizeof(char),1,schema);      
+        		printf("tipo campo[%d]= %c\n", i,esquema[i].tipo );
         		fread(&esquema[i].tam, sizeof(int),1,schema);
+        		printf("tamanho campo[%d]= %d\n", i,esquema[i].tam );
+        		
         	}
+        	else
+        		fseek(schema, 45, 1);
         }
+        
     }
     return esquema;
 }
-
 void cpystr(char *tg, char *sc, int st, int len){ //SC = Ponteiro para string que carregada do arquivo; tg = Ponteiro para uma página do buffer
 	st = st * len;
 	
 	int i=st,j=0;
 	for (;i<len+st;i++)
 	  tg[i]=sc[j++];
-	
 }
 
 void initbuffer(tp_buffer *bp){
