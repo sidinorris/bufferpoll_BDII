@@ -5,19 +5,21 @@
 #define SIZE 512
 #define PAGES 1024
 #define TAM 40
+// Tratamendo de erros.
+#define ERRO_NOME_TABELA -1
+#define ERRO_ABRIR_ARQUIVO -2
+#define ERRO_DE_PARAMETRO -3
+#define ERRO_ABRIR_ESQUEMA NULL
 
-#define ERRO_ABRIR_ARQUIVO -1
-#define ERRO_NOME_TABELA -2
-
-struct fs_objects {
+struct fs_objects { // Estrutura usada para carregar fs_objects.dat
 	char nome[20];
 	int cod;
 	char nArquivo[20];
 	int qtdCampos;
 };
 
-typedef struct table_bd{
-	char nome[TAM];
+typedef struct table_bd{ // Estrutura usada para carregar fs_schema.dat
+	char nome[TAM]; 
 	char tipo;
 	int tam;
 }tp_table;
@@ -41,18 +43,15 @@ union c_int{
 	char cnum[sizeof(int)];
 };
 
-struct fs_objects leObjeto(char * nTabela);
+struct fs_objects leObjeto(char *nTabela);
 tp_table *leSchema (struct fs_objects objeto);
-char *strcop(char *data, int pos, int tam);
-int tamTupla(tp_table *campos, struct fs_objects meta);
-
+int tamTupla(tp_table *esquema, struct fs_objects objeto);
 void cpystr(char *, char *, int, int);
-void initbuffer(tp_buffer *);
-void cria_campo(int, int, char *);
-void drawline(tp_buffer *, tp_table *, int, int *, int);
+tp_buffer * initbuffer();
+void cria_campo(int tam, int header, char *val, int x);
+int drawline(tp_buffer *buffpoll, tp_table *s, struct fs_objects objeto, int p, int num_page);
 int cabecalho(tp_table *, int);
-int printbufferpoll(tp_buffer *, tp_table *, int, int);
+int printbufferpoll(tp_buffer *buffpoll, tp_table *s,struct fs_objects objeto, int num_page);
 int load_metadata(FILE *, tp_table *, int);
-void load_data(FILE *, tp_buffer *, int);
-
+void load_data( struct fs_objects objeto, tp_buffer *bufferpool, int tam_registro);
 int page_avalible;

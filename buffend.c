@@ -1,26 +1,27 @@
 #include "buffend.h"
-
-
-struct fs_objects leObjeto(char * nTabela){
+struct fs_objects leObjeto(char *nTabela){
 	
 	FILE *dicionario;
 	char *tupla = (char *)malloc(sizeof(char)*20);
 	int cod;
-	dicionario = fopen("fs_object.dat", "r");
+	dicionario = fopen("fs_object.dat", "r"); // Abre o dicionario de dados.
 
-	struct fs_objects objeto ;
+	struct fs_objects objeto;
+	objeto.qtdCampos = ERRO_NOME_TABELA; // Operacao para tratamento de erro.
 
-	if (dicionario == NULL)
+	if (dicionario == NULL){
+		objeto.qtdCampos = ERRO_ABRIR_ARQUIVO;
 		return objeto;
+	}
 
 	while(fgetc (dicionario) != EOF){
         fseek(dicionario, -1, 1);
 
         fread(tupla, sizeof(char), 20, dicionario); //Lê somente o nome da tabela
 
-        if(strcmp(tupla, nTabela) == 0){
+        if(strcmp(tupla, nTabela) == 0){ // Verifica se o nome dado pelo usuario existe no dicionario de dados.
       		strcpy(objeto.nome, tupla);
-      		fread(&cod,sizeof(int),1,dicionario);
+      		fread(&cod,sizeof(int),1,dicionario);	// Copia valores referentes a tabela pesquisada para a estrutura.
       		objeto.cod=cod;
       		fread(tupla,sizeof(char),20,dicionario);
       		strcpy(objeto.nArquivo, tupla);
@@ -29,7 +30,7 @@ struct fs_objects leObjeto(char * nTabela){
       		
         	return objeto;
         }
-        fseek(dicionario, 28, 1);
+        fseek(dicionario, 28, 1); // Pula a quantidade de caracteres para a proxima verificacao(4B do codigo, 20B do nome do arquivo e 4B da quantidade de campos).
 	}
 	return objeto;
 }
@@ -37,27 +38,27 @@ tp_table *leSchema (struct fs_objects objeto){
 	FILE *schema;
 	int i = 0, cod;
 	char *tupla = (char *)malloc(sizeof(char)*40);  
-	tp_table *esquema = (tp_table *)malloc(sizeof(tp_table)*objeto.qtdCampos);
+	tp_table *esquema = (tp_table *)malloc(sizeof(tp_table)*objeto.qtdCampos); // Aloca esquema com a quantidade de campos necessarios.
 
-	schema = fopen("fs_schema.dat", "r");
+	schema = fopen("fs_schema.dat", "r"); // Abre o arquivo de esquemas de tabelas.
 
-	if (schema == NULL)
-		return esquema;
+	if (schema == ERRO_ABRIR_ESQUEMA)
+		return ERRO_ABRIR_ESQUEMA;
 
-	while((fgetc (schema) != EOF) && (i < objeto.qtdCampos)){
+	while((fgetc (schema) != EOF) && (i < objeto.qtdCampos)){ // Varre o arquivo ate encontrar todos os campos com o codigo da tabela.
         fseek(schema, -1, 1);
 
-        if(fread(&cod, sizeof(int), 1, schema)){
-        	if(cod == objeto.cod){
+        if(fread(&cod, sizeof(int), 1, schema)){ // Le o codigo da tabela.
+        	if(cod == objeto.cod){ // Verifica se o campo a ser copiado e da tabela que esta na estrutura fs_objects.
         		
         		fread(tupla, sizeof(char), 40, schema);
-        		strcpy(esquema[i].nome,tupla);
+        		strcpy(esquema[i].nome,tupla);					// Copia dados do campo para o esquema.
         		fread(&esquema[i].tipo, sizeof(char),1,schema);      
         		fread(&esquema[i].tam, sizeof(int),1,schema);   
         		i++;    		
         	}
         	else
-        		fseek(schema, 45, 1);
+        		fseek(schema, 45, 1); // Pula a quantidade de caracteres para a proxima verificacao (40B do nome, 1B do tipo e 4B do tamanho).
         }
         
     }
@@ -70,9 +71,9 @@ void cpystr(char *tg, char *sc, int st, int len){ //SC = Ponteiro para string qu
 	for (;i<len+st;i++)
 	  tg[i]=sc[j++];
 }
-
-void initbuffer(tp_buffer *bp){
+tp_buffer * initbuffer(){
 	
+	tp_buffer *bp = (tp_buffer*)malloc(sizeof(tp_buffer)*PAGES);
 	int i;
 
 	for (i = 0;i < PAGES; i++){
@@ -82,36 +83,39 @@ void initbuffer(tp_buffer *bp){
 		bp++;
 	}
 	page_avalible = 0; // Variavel global controlando as páginas utilizadas
+	return bp;
 }
-
-void cria_campo(int tam, int header, char *val){
+void cria_campo(int tam, int header, char *val, int x){
 	int i;
-	char aux[40];
-	
+	char aux[45];
+
 	if(header){
-		aux[0] = '|';
-		for(i = 1; i <= TAM && val[i-1] != '\0'; i++){
-			aux[i] = val[i-1];
+		for(i = 0; i <= TAM && val[i] != '\0'; i++){
+			aux[i] = val[i];
 		}
-		for(;i <= TAM; i++)
-			aux[i] = '=';
-		aux[i++] = '|';
+		for(;i<TAM;i++)
+			aux[i] = ' ';
 		aux[i] ='\0';
-		printf("%s", aux);	
-		
+		printf("%s", aux);
+
 	}
+
 	else{
-		for(i = 0; i < tam; i++){
+		for(i = 0; i < x; i++)
 			printf(" ");
-		}
-		printf("|");
 	}
 }
-void drawline(tp_buffer *buffpoll, tp_table *s, int num_reg, int *pos_ini, int num_page){
-	
+int drawline(tp_buffer *buffpoll, tp_table *s, struct fs_objects objeto, int p, int num_page){
+	 
+	if (num_page > PAGES || p > SIZE){
+		return ERRO_DE_PARAMETRO;
+	}
+	int *pos_ini, aux = (p * tamTupla(s,objeto)) , num_reg = objeto.qtdCampos;
+	pos_ini = &aux;
 	int count, pos_aux, bit_pos;
 	union c_double cd;
 	union c_int ci;
+	int x = 0;
 	
 	count = pos_aux = bit_pos = 0;
 	
@@ -119,35 +123,35 @@ void drawline(tp_buffer *buffpoll, tp_table *s, int num_reg, int *pos_ini, int n
 		pos_aux = *(pos_ini);
 		bit_pos = 0;
 		
-		//---para imprimir com espacos corretos
-		
-		printf("|");
-		
+
 		switch(s[count].tipo){
 			
 			case 'S':
-				
+				x = 0;
 				while(buffpoll[num_page].data[pos_aux] != '\0'){
 			
 					printf("%c", buffpoll[num_page].data[pos_aux]);
 					if ((buffpoll[num_page].data[pos_aux++] & 0xc0) != 0x80) bit_pos++; //Conta apenas bits que possam ser impressos (UTF8)
+				x++;
 				}
 				
-				cria_campo((TAM - (bit_pos)), 0, (char*)' ');
+				cria_campo((TAM - (bit_pos)), 0, (char*)' ', (40 - x));
 				break;
 			
 			case 'I':
 				while(pos_aux < *(pos_ini) + s[count].tam){
 					ci.cnum[bit_pos++] = buffpoll[num_page].data[pos_aux++];
 				}
-				printf("%-20d|", ci.num); //Controla o número de casas até a centena
+				printf("%d", ci.num); //Controla o número de casas até a centena
+				cria_campo((TAM - (bit_pos)), 0, (char*)' ', 38);
 				break;
 				
 			case 'D':
 				while(pos_aux < *(pos_ini) + s[count].tam){
 					cd.double_cnum[bit_pos++] = buffpoll[num_page].data[pos_aux++]; // Cópias os bytes do double para área de memória da union
 				}
-				printf("%-20.3lf|", cd.dnum);
+				printf("%.3lf", cd.dnum);
+				cria_campo((TAM - (bit_pos)), 0, (char*)' ', 34);
 				break;
 			
 			case 'C': 
@@ -158,7 +162,7 @@ void drawline(tp_buffer *buffpoll, tp_table *s, int num_reg, int *pos_ini, int n
 				else{
 					bit_pos = s[count].tam;
 				}
-				cria_campo((bit_pos - 1), 0, (char*)' ');	
+				cria_campo((bit_pos - 1), 0, (char*)' ', 39);	
 				break;
 			
 			default: printf("Erro de Impressão\n\n\n");
@@ -167,23 +171,22 @@ void drawline(tp_buffer *buffpoll, tp_table *s, int num_reg, int *pos_ini, int n
 		*(pos_ini) += s[count].tam;		
 	}
 	printf("\n");
+	return 0;
 }
-
 int cabecalho(tp_table *s, int num_reg){
 	int count, aux;
 	aux = 0;
 	
 	for(count = 0; count < num_reg; count++){
-		cria_campo(s[count].tam, 1, s[count].nome); // O segundo parâmetro significa se = 1 Cabecalho se = 0 é valor daquele campo
+		cria_campo(s[count].tam, 1, s[count].nome, 0); // O segundo parâmetro significa se = 1 Cabecalho se = 0 é valor daquele campo
 		aux += s[count].tam;
 	}
 	printf("\n");
 	return aux;
 }
-
-int printbufferpoll(tp_buffer *buffpoll, tp_table *s, int num_page, int num_reg){
+int printbufferpoll(tp_buffer *buffpoll, tp_table *s,struct fs_objects objeto, int num_page){
 	
-	int aux, i;
+	int aux, i, num_reg = objeto.qtdCampos;
 	
 	
 	if(buffpoll[num_page].nrec == 0){
@@ -195,12 +198,12 @@ int printbufferpoll(tp_buffer *buffpoll, tp_table *s, int num_page, int num_reg)
 	aux = cabecalho(s, num_reg);
 	
 	
-	while(i < buffpoll[num_page].nrec * aux){ // Enquanto i < numero de registros * tamanho de uma instancia da tabela
-		drawline(buffpoll, s, num_reg, &i, num_page);
+	while(i < buffpoll[num_page].nrec){ // Enquanto i < numero de registros * tamanho de uma instancia da tabela
+		drawline(buffpoll, s, objeto, i, num_page);
+		i++;
 	}
 	return 1;
 }
-
 int load_metadata(FILE *arq_meta, tp_table *s, int valor_reg){
 	
 	int count, pos;
@@ -228,19 +231,25 @@ int load_metadata(FILE *arq_meta, tp_table *s, int valor_reg){
 	}
 	return tam_registro;
 }
+int tamTupla(tp_table *esquema, struct fs_objects objeto){// Retorna o tamanho total da tupla da tabela.
 
-int tamTupla(tp_table *campos, struct fs_objects meta){// Retorna o tamanho total da tupla da tabela.
-
-    int qtdCampos = meta.qtdCampos, i, tamanhoGeral = 0;
+    int qtdCampos = objeto.qtdCampos, i, tamanhoGeral = 0;
    
     if(qtdCampos){ // Lê o primeiro inteiro que representa a quantidade de campos da tabela.
 		for(i = 0; i < qtdCampos; i++)
-			tamanhoGeral += campos[i].tam; // Soma os tamanhos de cada campo da tabela.
+			tamanhoGeral += esquema[i].tam; // Soma os tamanhos de cada campo da tabela.
 	}
 
 	return tamanhoGeral;
 }
-void load_data(FILE *arq_data, tp_buffer *bufferpool, int tam_registro){
+void load_data( struct fs_objects objeto, tp_buffer *bufferpool, int tam_registro){
+
+	FILE *arq_data;
+	arq_data = fopen(objeto.nArquivo, "r");
+	
+	if(arq_data == NULL){
+		return;
+	}
 	
 	char *lei_aux;
 	int page_count;
@@ -267,4 +276,5 @@ void load_data(FILE *arq_data, tp_buffer *bufferpool, int tam_registro){
 		}
 	}
 	free(lei_aux);
+	fclose(arq_data);	
 }
