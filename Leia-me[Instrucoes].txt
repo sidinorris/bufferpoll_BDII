@@ -7,7 +7,7 @@ Alunos: Gabrielle Almeida de Souza e Lais Borin
 Introdução
 	Trabalho desenvolvido para o componente curricular de Banco de Dados II, sua finalidade é implementar um dicionario de dados complementando o que ja havia sido feito anteriormente.
 
-1. Definição das estruturas, foi criadas somente uma estrutura a mais.
+1. Definição das estruturas, foi criada somente uma estrutura a mais.
 
 	Estrutura armazenando os dados retirados do arquivo fs_objects.dat, dividida em nome com 20 caracteres para armazenar o nome da tabela, cod com 4B para armazenar o codigo da tabela, nArquivo com 20 caracteres para armazenar o nome do arquivo que tem os dados referentes a tabela e qtdCampos com 4B para armazenar a quantidade de campos que a tabela apresenta.
 
@@ -25,7 +25,7 @@ struct fs_objects {
 		4B que representa o tamanho do campo.
 
 
-2. Definição das funções, encontradas juntamente com as estruturas definidas acima no buffend.h as funções são:
+2. Definição das funções, encontradas juntamente com a estruturas definida acima no buffend.h, as funções são:
 
 1. tp_buffer * initbuffer();
 2. void cpystr(char *, char *, int, int);
@@ -45,12 +45,12 @@ struct fs_objects {
 	3 – (Funcao em desuso). load_metada como o próprio nome sugere carrega as informações referentes aos meta dados, seus parâmetros são na ordem, ponteiro para o arquivo, ponteiro para a estrutura de meta dados e o número de campos encontrados naquela “tabela”;
 	4 – Esta função imprime uma linha/tupla da tabela, ele espera como parâmetro, ponteiro para o buffer, para o esquema, para o objeto, o número do registro a ser impresso e em qual página encontra-se aquela determinada tupla;
 	5 – A função cabeçalho imprime o nome de cada campo/coluna da tabela, espera como parâmetro o número colunas/registros/campos e claro um ponteiro para a estrutura do esquema;
-	6 – Esta função imprime todas os dados carregados numa determinada página do buffer, os parâmetros esperados são, ponteiro para o buffer, para o esquema, para o objeto e o numero da pagina a ser impressa;
-	7 – Cria campo é uma função auxiliar que ajuda, as funções 4, 5 e 6 na tabulação, para os dados serem impressos na tela no formato de uma tabela. 
-	8 – E finalmente a load_data responsável por resgatar os dados presentes no arquivo e armazena-los no buffer, seus parâmetro também são ponteiros para as estruturas objeto, buffer, e tamanho da tupla retornado da funcao tamTupla();
+	6 – Esta função imprime todas os dados carregados numa determinada página do buffer, os parâmetros esperados são um ponteiro para o buffer, outro para o esquema, outro para o objeto e o numero da pagina a ser impressa;
+	7 – Cria campo é uma função auxiliar que ajuda as funções 4, 5 e 6 na tabulação, para os dados serem impressos na tela no formato de uma tabela. 
+	8 – A load_data é responsável por resgatar os dados presentes no arquivo e armazena-los no buffer, seus parâmetro também são ponteiros para as estruturas objeto, buffer, e tamanho da tupla retornado da funcao tamTupla();
 	9 - Função que verifica se o nome solicitado da tabela existe no dicionario de dados. Caso exista ela retorna uma estrutura contendo os dados sobre a tabela na estrutura fs_objects.
-	10 - Função com o objetivo de intedentificar o esquema da tabela atravez do codigo da mesma. Essa função tem como parâmetro somente a estrutura de objeto que contém o codigo que a função usa para identificar os campos da tabela.
-	11- Essa funcao retorna o tamanho da tupla da tabela de dados. Tem parâmetros para o esquema e o objeto.
+	10 - Função com o objetivo de intedentificar o esquema da tabela atravéz do codigo da mesma. Essa função tem como parâmetro somente a estrutura de objeto que contém o codigo que a função usa para identificar os campos da tabela.
+	11- Essa função retorna o tamanho da tupla da tabela de dados. Tem parâmetros para o esquema e o objeto.
 
 3. Da compilação:
 
