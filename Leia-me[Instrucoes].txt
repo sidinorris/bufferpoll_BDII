@@ -5,59 +5,92 @@ Professor: Dr. Denio Duarte
 Alunos: Gabrielle Almeida de Souza e Lais Borin
 
 Introdução
-	Trabalho desenvolvido para o componente curricular de Banco de Dados II, sua finalidade é implementar um dicionario de dados complementando o que ja havia sido feito anteriormente.
+	Trabalho desenvolvido para o componente curricular de Banco de Dados II, sua finalidade é implementar a criação de tabelas, bem como a inclusão de tuplas em disco e remoção de tuplas do buffer complementando o que ja havia sido feito anteriormente.
 
-1. Definição das estruturas, foi criada somente uma estrutura a mais.
+Sobre o dicionário de dados e o esquema:
+	Por definição, o dicionário de dados está no aquivo fs_object.dat e o esquema em fs_schema.dat, os mesmos serão criados no diretório raiz da pasta dos fontes.
+	São carregados na memória pelas funçõe leObjeto(nTabela) e leSchema(objeto) e tem a seguinte estrutura:
 
-	Estrutura armazenando os dados retirados do arquivo fs_objects.dat, dividida em nome com 20 caracteres para armazenar o nome da tabela, cod com 4B para armazenar o codigo da tabela, nArquivo com 20 caracteres para armazenar o nome do arquivo que tem os dados referentes a tabela e qtdCampos com 4B para armazenar a quantidade de campos que a tabela apresenta.
+	struct fs_objects { // Estrutura usada para carregar fs_object.dat
+		char nome[20];
+		int cod;
+		char nArquivo[20];
+		int qtdCampos;
+	};
 
-struct fs_objects { 
-	char nome[20];
-	int cod;
-	char nArquivo[20];
-	int qtdCampos;
-};
+	typedef struct tp_table{ // Estrutura usada para carregar fs_schema.dat
+		char nome[TAMANHO_NOME_CAMPO];	
+		char tipo;						
+		int tam;						
+		struct tp_table *next;	
+	}tp_table;
 
-	O arquivo fs_schema organiza-se da seguinte forma:
+	O arquivo fs_object.dat organiza-se da seguinte forma:
+		20B que representam o nome da tabela; 
+		1B que representam o código da tabela;
+		20B que representa o nome do arquivo onde estão as tuplas da tabela;
+		4B que representa a quantidade de campos da tabela.
+
+
+	O arquivo fs_schema.dat organiza-se da seguinte forma:
 		4B que representam o codigo da tabela; (Código que representa a tabela em fs_objects.dat)
 		40B que representam o nome do campo;
 		1B que representa o tipo do campo;
 		4B que representa o tamanho do campo.
 
+	Caso os arquivos fs_object.dat e fs_schema.dat não existam ainda, quando chamada, a função finalizaTabela(...) criará os mesmos adicionando os dados da tabela criada.
 
-2. Definição das funções, encontradas juntamente com a estruturas definida acima no buffend.h, as funções são:
+Sobre a criação e inserção em tabelas:
+	Para criar uma tabela é necessário uma estrutura do tipo 'table'. Esta estrutura armazenará os dados da tabela a ser criada.
+	Após a criação de uma istância de 'table' é necessário iniciá-la com o nome da tabla a ser criada usando a função iniciaTabela(nomeTabela):
 
-1. tp_buffer * initbuffer();
-2. void cpystr(char *, char *, int, int);
-3. int load_metadata(FILE *, tp_table *, int);
-4. int drawline(tp_buffer *buffpoll, tp_table *s, struct fs_objects objeto, int p, int num_page);
-5. int cabecalho(tp_table *, int);
-6. int printbufferpoll(tp_buffer *buffpoll, tp_table *s,struct fs_objects objeto, int num_page);
-7. void cria_campo(int tam, int header, char *val, int x);
-8.void load_data( struct fs_objects objeto, tp_buffer *bufferpool, int tam_registro);
-9. struct fs_objects leObjeto(char *nTabela);
-10. tp_table *leSchema (struct fs_objects objeto);
-11. int tamTupla(tp_table *esquema, struct fs_objects objeto);
+		table *t = NULL;
+		t = iniciaTabela("Pessoa");
+
+	A partir da iniciação da tabela, pode-se adicionar os campos utilizando a função adicionaCampo(t, nomeCampo, tipoCampo, tamanhoCampo):
+
+		t = adicionaCampo(t, "Nome", 'S', 20); // Cria um campo de nome 'Nome' do tipo string e de tamanho 20
+		t = adicionaCampo(t, "Idade", 'I', 4); // Cria um campo de nome 'Idade' do tipo inteiro e de tamanho 4
+
+	Agora, para a tabela ser finalmente adicionada ao dicionário de dados e ao esquema, chama-se a função finalizaTabela(t);
+
+	Criada a tabela, pode-se inserir os dados.
+	Quanto da inserção, é necessário criar uma estrutura do tipo 'column' que criará uma lista encadeada de valores a serem adicionados a tabela.
+	Para adicionar uma tupla na tabela, é preciso inserir valor por valor de cada campo chamando a função insereValor(c, nomeCampo, valorCampo):
+
+		column *c = NULL;
+		c = insereValor(c, "Nome", "Joana");
+		c = insereValor(c, "Idade", "40");
+
+	OBS: A inserção dos dados deve ocorrer na sequência de criação de campo, sendo que não é possível realizar a inserção incompleta de uma tupla
+
+	Assim, com os dados já adicionados na tabela, basta chamar a função finalizaInsert(nomeTabela, c) para gravar as tuplas no arquivo nomeTabela.dat, que armazena os dados referente a esta tabela:
+
+		finalizaInsert("Pessoa", c);
+
+Sobre inserir uma tupla no buffer:
+	Para adicionar uma tupla no buffer, realize o seguinte tendo já o bufferpoll, o esquema e o objeto devidamete inicializados:
+
+		colocaTuplaBuffer(bufferpoll, 0, esquema, objeto); // Onde '0' é tupla a ser adicionada, relativa a ordem de inserção em sua tabela
 
 
-	1 – Esta tem como funcionalidade inicializar os valores da estrutura buffer.
-	2 – Possui um propósito simples, copiar o conteúdo do vetor origem para o destino. Para que isso seja possível seus parâmetros são, cpystr(destino, origem, número_de_registros_na_página, tamanho_do_registro);
-	3 – (Funcao em desuso). load_metada como o próprio nome sugere carrega as informações referentes aos meta dados, seus parâmetros são na ordem, ponteiro para o arquivo, ponteiro para a estrutura de meta dados e o número de campos encontrados naquela “tabela”;
-	4 – Esta função imprime uma linha/tupla da tabela, ele espera como parâmetro, ponteiro para o buffer, para o esquema, para o objeto, o número do registro a ser impresso e em qual página encontra-se aquela determinada tupla;
-	5 – A função cabeçalho imprime o nome de cada campo/coluna da tabela, espera como parâmetro o número colunas/registros/campos e claro um ponteiro para a estrutura do esquema;
-	6 – Esta função imprime todas os dados carregados numa determinada página do buffer, os parâmetros esperados são um ponteiro para o buffer, outro para o esquema, outro para o objeto e o numero da pagina a ser impressa;
-	7 – Cria campo é uma função auxiliar que ajuda as funções 4, 5 e 6 na tabulação, para os dados serem impressos na tela no formato de uma tabela. 
-	8 – A load_data é responsável por resgatar os dados presentes no arquivo e armazena-los no buffer, seus parâmetro também são ponteiros para as estruturas objeto, buffer, e tamanho da tupla retornado da funcao tamTupla();
-	9 - Função que verifica se o nome solicitado da tabela existe no dicionario de dados. Caso exista ela retorna uma estrutura contendo os dados sobre a tabela na estrutura fs_objects.
-	10 - Função com o objetivo de intedentificar o esquema da tabela atravéz do codigo da mesma. Essa função tem como parâmetro somente a estrutura de objeto que contém o codigo que a função usa para identificar os campos da tabela.
-	11- Essa função retorna o tamanho da tupla da tabela de dados. Tem parâmetros para o esquema e o objeto.
+Sobre excluir uma tupla do buffer e recuperar uma página do buffer:
+	Para excluir uma tupla e obter a mesma para impressão, basta chamar a função com o buffer,  esquema, a página a excluir uma tupla e a tupla a ser excluida:
 
-3. Da compilação:
+		column *tuplaE = excluirTuplaBuffer(buffer, esquema, objeto, 0, 2); // '2' é a posição da tupla relativa a página do buffer
+
+	Para recuperar uma página do buffer, bem como obter esta página, basta chamar a função com o buffer, o esquema e o número da página a ser recuperada, como segue:
+
+		column *pagina = getPage(bufferpoll, esquema, objeto, 0);
+
+	A estrutura do tipo 'column' foi criada com o objetivo de armazenar os dados das tabelas, bem como para promover possíveis impressões de dados.
+
+
+
+Da compilação:
 
 	$ gcc *.c -o prog -Wall
 	$ ./prog <Nome da Tabela>
-
-	Obs.: Estão inclusas as tabelas Cliente(nome varchar(20), idade integer, sexo varchar(1)) e Cidade(nome varchar(20), sigla varchar(4)) com 10 tuplas cada tabela. 
 
 
 
